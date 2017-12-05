@@ -22,8 +22,7 @@ The main view that processes a SAML request is the LoginView. It is a class-base
 
 
 .. autoclass:: djangosaml2idp.views.LoginProcessView
-    :members: construct_server, construct_identity, try_multifactor
-
+   :members:
 
 ***********************************
 Multi factor authentication support

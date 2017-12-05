@@ -24,6 +24,10 @@ sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../'))
 
+os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.settings'
+import django
+django.setup()
+
 import djangosaml2idp
 from djangosaml2idp import __version__
 
