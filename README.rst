@@ -18,6 +18,8 @@ It builds on top of PySAML2_, is compatible with Python 2/3 and Django >= 1.11.
 
 Any contributions, feature requests, proposals, ideas ... are welcome!
 
+More extensive documentation to be found on https://djangosaml2idp.readthedocs.io/en/latest/?badge=latest
+
 Installation
 ------------
 
@@ -116,5 +118,5 @@ Use this metadata xml to configure your SP. Place the metadata xml from that SP 
 
 Example project
 ---------------
-``example_project`` contains a barebone setup to demonstrate the package.
+[example_project](example_project) contains a barebone setup to demonstrate the package.
 It consists of a Service Provider implemented with ``djangosaml2`` and an Identity Provider using ``djangosaml2idp``.

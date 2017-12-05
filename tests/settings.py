@@ -34,6 +34,5 @@ INSTALLED_APPS = (
 
 ROOT_URLCONF = 'tests.urls'
 
-
 SAML_IDP_CONFIG = {}
 SAML_IDP_SPCONFIG = {}

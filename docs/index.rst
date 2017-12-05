@@ -34,6 +34,7 @@ Table of contents
    installation
    configuration
    example_setup/README
+   CHANGELOG
 
 
 Indices and tables
