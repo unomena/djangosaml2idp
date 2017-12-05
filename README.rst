@@ -23,15 +23,18 @@ Installation
 
 The first thing you need to do is add ``djangosaml2idp`` to the list of installed apps::
 
+    ```python
     INSTALLED_APPS = (
         'django.contrib.admin',
         'djangosaml2idp',
         ...
     )
+    ```
 
 
 Now include ``djangosaml2idp`` in your project by adding it in the url config::
 
+    ```python
     from django.conf.urls import url, include
     from django.contrib import admin
 
@@ -40,10 +43,12 @@ Now include ``djangosaml2idp`` in your project by adding it in the url config::
         url(r'^admin/', admin.site.urls),
         ...
     ]
+    ```
 
 
 In your Django settings, configure your IdP. Configuration follows the pysaml2_configuration_. The IdP from the example project looks like this::
 
+    ```python
     ... # other django settings
     import saml2
     from saml2.saml import NAMEID_FORMAT_EMAILADDRESS, NAMEID_FORMAT_UNSPECIFIED
@@ -86,10 +91,12 @@ In your Django settings, configure your IdP. Configuration follows the pysaml2_c
         }],
         'valid_for': 365 * 24,
     }
+    ```
 
 
 You also have to define a mapping with config for each SP you talk to::
 
+    ```python
     SAML_IDP_SPCONFIG = {
         'http://localhost:8000/saml2/metadata/': {
             'processor': 'djangosaml2idp.processors.BaseProcessor',
@@ -103,6 +110,7 @@ You also have to define a mapping with config for each SP you talk to::
             }
         }
     }
+    ```
 
 
 The keys of this dict are the Service Provider ID's. The IdP will only respond to SP ID's which are present in this mapping.
