@@ -14,7 +14,7 @@ The example will run equally on Mac/Windows/Linux using docker.
 How to run
 ----------
 
-Go to this folder in a terminal and start the containers::
+Go to this folder in a terminal and start the containers:
 
     docker-compose up -d
 
@@ -31,6 +31,6 @@ And that is essentially what SAML2 does :)
 Cleanup
 -------
 
-To stop the containers::
+To stop the containers:
 
     docker-compose stop
