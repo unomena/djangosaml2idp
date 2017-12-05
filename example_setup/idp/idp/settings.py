@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import os
 
+import saml2  # noqa
+from saml2.saml import (NAMEID_FORMAT_EMAILADDRESS,  # noqa
+                        NAMEID_FORMAT_UNSPECIFIED)
+from saml2.sigver import get_xmlsec_binary  # noqa
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -41,7 +46,7 @@ INSTALLED_APPS = [
     'idp',
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -121,18 +126,35 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-### Everything above are default settings made by django-admin startproject
-### The following is added for djangosaml2idp IdP configuration.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+        'djangosaml2idp.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
 
-import saml2
-from saml2.saml import NAMEID_FORMAT_EMAILADDRESS, NAMEID_FORMAT_UNSPECIFIED
-from saml2.sigver import get_xmlsec_binary
+# Everything above are default settings made by django-admin startproject
+# The following is added for djangosaml2idp IdP configuration.
+
 
 LOGIN_URL = '/login/'
 BASE_URL = 'http://localhost:9000/idp'
 
 SAML_IDP_CONFIG = {
-    'debug' : DEBUG,
+    'debug': DEBUG,
     'xmlsec_binary': get_xmlsec_binary(['/opt/local/bin', '/usr/bin/xmlsec1']),
     'entityid': '%s/metadata' % BASE_URL,
     'description': 'Example IdP setup',

@@ -38,9 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'djangosaml2',
+    'sp',
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -120,13 +121,13 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-### Everything above are default settings made by django-admin startproject
-### The following is added for djangosaml2 SP configuration.
-### See their docs for explanation of all options.
+# Everything above are default settings made by django-admin startproject
+# The following is added for djangosaml2 SP configuration.
+# See their docs for explanation of all options.
 
-import saml2
-from saml2.saml import NAMEID_FORMAT_EMAILADDRESS
-from saml2.sigver import get_xmlsec_binary
+import saml2  #noqa
+from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  #noqa
+from saml2.sigver import get_xmlsec_binary  #noqa
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
@@ -141,7 +142,7 @@ LOGOUT_REDIRECT_URL = '/'
 BASE_URL = 'http://localhost:8000/saml2'
 
 SAML_CONFIG = {
-    'debug' : DEBUG,
+    'debug': DEBUG,
     'xmlsec_binary': get_xmlsec_binary(['/opt/local/bin', '/usr/bin/xmlsec1']),
     'entityid': '%s/metadata/' % BASE_URL,
 
@@ -176,7 +177,7 @@ SAML_CONFIG = {
         'key_file': BASE_DIR + '/certificates/private_key.pem',
         'cert_file': BASE_DIR + '/certificates/public_key.pem',
     }],
-    'valid_for': 365 * 24, 
+    'valid_for': 365 * 24,
 }
 
 SAML_USE_NAME_ID_AS_USERNAME = True

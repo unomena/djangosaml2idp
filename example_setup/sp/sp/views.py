@@ -6,16 +6,15 @@ from djangosaml2.signals import pre_user_save
 
 
 def index(request):
-    """ Barebone 'diagnistics' view, print user attributes if logged in + login/logout links.
+    """ Barebone 'diagnostics' view, print user attributes if logged in + login/logout links.
     """
     if request.user.is_authenticated:
-        out = "LOGGED IN: <a href={0}>LOGOUT</a><br>".format(settings.LOGOUT_URL)
-        out += "".join(['%s: %s</br>' % (field.name, getattr(request.user, field.name))
+        out = "<a href={0}>LOGOUT</a><br><br>".format(settings.LOGOUT_URL)
+        out += "".join(['<b>{}</b>: {}</br>'.format(field.name, getattr(request.user, field.name))
                     for field in request.user._meta.get_fields()
                     if field.concrete])
         return HttpResponse(out)
-    else:
-        return HttpResponse("LOGGED OUT: <a href={0}>LOGIN</a>".format(settings.LOGIN_URL))
+    return HttpResponse("<a href={0}>LOGIN</a>".format(settings.LOGIN_URL))
 
 
 # TODO fix this in IdP side?

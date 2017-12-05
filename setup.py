@@ -14,10 +14,10 @@ setup(
     maintainer="OTA Insight",
     long_description="\n\n".join([
         open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
-        #open('HISTORY.rst').read()
+        #  open('HISTORY.rst').read()
     ]),
     install_requires=[
-        'django>=1.8',
+        'django>=1.11',
         'pysaml2>=4.4.0'
         ],
     license='MIT',
@@ -29,11 +29,8 @@ setup(
         "Development Status :: 3 - Alpha",
         'Environment :: Web Environment',
         "Framework :: Django",
-        "Framework :: Django :: 1.7",
-        "Framework :: Django :: 1.8",
-        "Framework :: Django :: 1.9",
-        "Framework :: Django :: 1.10",
         "Framework :: Django :: 1.11",
+        "Framework :: Django :: 2.0",
         'Intended Audience :: Developers',
         "License :: OSI Approved :: MIT License",
         'Operating System :: OS Independent',

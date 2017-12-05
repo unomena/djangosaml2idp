@@ -6,8 +6,7 @@ import copy
 import logging
 
 from django.conf import settings
-from django.contrib.auth import logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import (HttpResponse, HttpResponseBadRequest,
@@ -15,6 +14,7 @@ from django.http import (HttpResponse, HttpResponseBadRequest,
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.module_loading import import_string
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import View
 from saml2 import BINDING_HTTP_POST
 from saml2.authn_context import PASSWORD, AuthnBroker, authn_context_class_ref
 from saml2.config import IdPConfig
@@ -37,9 +37,9 @@ except AttributeError:
 @csrf_exempt
 def sso_entry(request):
     """ Entrypoint view for SSO. Gathers the parameters from the HTTP request, stores them in the session
-        and redirects the requester to the login_process view.
+        and redirects the request to the login_process view.
     """
-    passed_data = request.POST if request.method == 'POST' else request.GET
+    passed_data = request.POST or request.GET
     try:
         request.session['SAMLRequest'] = passed_data['SAMLRequest']
     except (KeyError, MultiValueDictKeyError) as e:
@@ -52,132 +52,109 @@ def sso_entry(request):
     return HttpResponseRedirect(reverse('saml_login_process'))
 
 
+class LoginProcessView(LoginRequiredMixin, View):
+    IDP = Server(config=IdPConfig().load(copy.deepcopy(settings.SAML_IDP_CONFIG)))
 
-# TODO Add http redirect logic based on https://github.com/rohe/pysaml2/blob/master/example/idp2_repoze/idp.py#L327
-@login_required
-def login_process(request):
-    """ View which processes the actual SAML request and returns a self-submitting form with the SAML response.
-        The login_required decorator ensures the user authenticates first on the IdP using 'normal' ways.
-    """
-    # Construct server with config from settings dict
-    conf = IdPConfig()
-    conf.load(copy.deepcopy(settings.SAML_IDP_CONFIG))
-    IDP = Server(config=conf)
-    # Parse incoming request
-    try:
-        req_info = IDP.parse_authn_request(request.session['SAMLRequest'], BINDING_HTTP_POST)
-    except Exception as excp:
-        return HttpResponseBadRequest(excp)
-    # TODO this is taken from example, but no idea how this works or whats it does. Check SAML2 specification?
-    # Signed request for HTTP-REDIRECT
-    if "SigAlg" in request.session and "Signature" in request.session:
-        _certs = IDP.metadata.certs(req_info.message.issuer.text, "any", "signing")
-        verified_ok = False
-        for cert in _certs:
-            # TODO implement
-            #if verify_redirect_signature(_info, IDP.sec.sec_backend, cert):
-            #    verified_ok = True
-            #    break
-            pass
-        if not verified_ok:
-            return HttpResponseBadRequest("Message signature verification failure")
+    def construct_server(self, request, *args, **kwargs):
+        """ If necessary, construct / edit / update self.IDP here. """
+        pass
 
-    binding_out, destination = IDP.pick_binding(
-        service="assertion_consumer_service",
-        entity_id=req_info.message.issuer.text)
+    def construct_identity(self, request, processor, sp_config):
+        """ Create user identity dict (SP-specific). """
+        sp_attribute_mapping = sp_config.get('attribute_mapping', {'username': 'username'})
+        return processor.create_identity(request.user, sp_attribute_mapping)
 
-    # Gather response arguments
-    try:
-        resp_args = IDP.response_args(req_info.message)
-    except (UnknownPrincipal, UnsupportedBinding) as excp:
-        return HttpResponseServerError(excp)
-    
-    try:
-        sp_config = settings.SAML_IDP_SPCONFIG[resp_args['sp_entity_id']]
-    except Exception:
-        raise ImproperlyConfigured("No config for SP %s defined in SAML_IDP_SPCONFIG" % resp_args['sp_entity_id'])
-    
-    # Create user-specified processor or fallback to all-access base processor
-    processor_string = sp_config.get('processor', None)
-    if processor_string is None:
-        processor = BaseProcessor
-    else:
-        processor_class = import_string(processor_string)
-        processor = processor_class()
-    
-    # Check if user has access to the service of this SP
-    if not processor.has_access(request.user):
-        raise PermissionDenied("You do not have access to this resource")
+    def try_multifactor(self, request, processor, http_args):
+        """ Hook to allow multifactor authentication. Example implementation here:
+            If required by processor, store SAML response in session and redirect to user-defined view.
+            User-defined view can then do whatever validation it needs and return HttpResponse(request.session['saml_data']).
+        """
+        multifactor_url = processor.multifactor_url(request.user)
+        if multifactor_url:
+            request.session['saml_data'] = http_args['data']
+            logger.debug("Redirecting to process_multi_factor")
+            return HttpResponseRedirect(multifactor_url)
 
-    # Create Identity dict (SP-specific)
-    sp_mapping = sp_config.get('attribute_mapping', {'username': 'username'})
-    identity = processor.create_identity(request.user, sp_mapping)
+    def get(self, request, *args, **kwargs):
+        self.construct_server(request, *args, **kwargs)
+        # Parse incoming request
+        try:
+            req_info = self.IDP.parse_authn_request(request.session['SAMLRequest'], BINDING_HTTP_POST)
+        except Exception as excp:
+            return HttpResponseBadRequest(excp)
 
-    # TODO investigate how this works, because I don't get it. Specification?
-    req_authn_context = req_info.message.requested_authn_context or PASSWORD
-    AUTHN_BROKER = AuthnBroker()
-    AUTHN_BROKER.add(authn_context_class_ref(req_authn_context), "")
+        # TODO this is taken from example, but no idea how this works or whats it does. Check SAML2 specification?
+        # Signed request for HTTP-REDIRECT
+        if "SigAlg" in request.session and "Signature" in request.session:
+            _certs = self.IDP.metadata.certs(req_info.message.issuer.text, "any", "signing")
+            verified_ok = False
+            for cert in _certs:
+                # TODO implement
+                # if verify_redirect_signature(_info, self.IDP.sec.sec_backend, cert):
+                #    verified_ok = True
+                #    break
+                pass
+            if not verified_ok:
+                return HttpResponseBadRequest("Message signature verification failure")
 
-    # Construct SamlResponse message
-    try:
-        authn_resp = IDP.create_authn_response(
-            identity=identity, userid=request.user.username,
-            name_id=NameID(format=resp_args['name_id_policy'].format, sp_name_qualifier=destination, text=request.user.username),
-            authn=AUTHN_BROKER.get_authn_by_accr(req_authn_context),
-            sign_response=IDP.config.getattr("sign_response", "idp") or False,
-            sign_assertion=IDP.config.getattr("sign_assertion", "idp") or False,
-            **resp_args)
-    except Exception as excp:
-        return HttpResponseServerError(excp)
+        # Gather response arguments
+        try:
+            resp_args = self.IDP.response_args(req_info.message)
+        except (UnknownPrincipal, UnsupportedBinding) as excp:
+            return HttpResponseServerError(excp)
 
-    # Return as html with self-submitting form.
-    http_args = IDP.apply_binding(
-        binding=binding_out,
-        msg_str="%s" % authn_resp,
-        destination=destination,
-        relay_state=request.session['RelayState'],
-        response=True)
+        logger.debug("Incoming request: {}".format({
+            'SP': resp_args['sp_entity_id'], 'SAMLRequest': request.session['SAMLRequest'], 'RelayState': request.session['RelayState']}))
 
-    logger.debug('http args are: %s' % http_args)
+        try:
+            sp_config = settings.SAML_IDP_SPCONFIG[resp_args['sp_entity_id']]
+        except Exception:
+            raise ImproperlyConfigured("No config for SP %s defined in SAML_IDP_SPCONFIG" % resp_args['sp_entity_id'])
 
-    if processor.enable_multifactor(request.user):
-      # Store http_args in session for after multi factor is complete
-      request.session['saml_data'] = http_args['data']
-      logger.debug("Redirecting to process_multi_factor")
-      return HttpResponseRedirect(reverse('saml_multi_factor'))
-    else:
-      logger.debug("Performing SAML redirect")
-      return HttpResponse(http_args['data'])
+        # Create user-specified processor or fallback to all-access base processor
+        processor_as_string = sp_config.get('processor', None)
+        processor = import_string(processor_as_string)() if processor_as_string else BaseProcessor()
 
+        if not processor.has_access(request.user):  # Check if user has access to this SP
+            raise PermissionDenied("User {} does not have access to this resource".format(request.user))
 
-@login_required
-def process_multi_factor(request, *args, **kwargs):
-  """This function is to perform 'other' user validation, for example 2nd factor
-  checks. Override this view per the documentation if using this functionality.
-  """
-  logger.debug('In process_multi_factor view')
+        # TODO investigate how this works, because I don't get it. Specification?
+        req_authn_context = req_info.message.requested_authn_context or PASSWORD
+        AUTHN_BROKER = AuthnBroker()
+        AUTHN_BROKER.add(authn_context_class_ref(req_authn_context), "")
 
-  def check_other_factor(request.user):
-    """The code here can do whatever it needs to validate your user but must
-    return True for authentication to be considered a success"""
-    return True
+        binding_out, destination = self.IDP.pick_binding(service="assertion_consumer_service", entity_id=req_info.message.issuer.text)
 
-  if check_other_factor(request.user):
-    logger.debug('Second factor succeeded for %s' % request.user)
-    # If authentication succeeded, log in is ok
-    return HttpResponse(request.session['saml_data'])
-  else:
-    logger.debug("Second factor failed; %s will not be able to log in" % request.user)
-    # Otherwise they should not be logging in.
-    logout(request)
-    raise PermissionDenied("Second authentication factor failed")
+        user_identity_dict = self.construct_identity(request, processor, sp_config)
+
+        try:  # Construct SamlResponse message
+            authn_resp = self.IDP.create_authn_response(
+                identity=user_identity_dict, userid=request.user.username,
+                name_id=NameID(format=resp_args['name_id_policy'].format, sp_name_qualifier=destination, text=request.user.username),
+                authn=AUTHN_BROKER.get_authn_by_accr(req_authn_context),
+                sign_response=self.IDP.config.getattr("sign_response", "idp") or False,
+                sign_assertion=self.IDP.config.getattr("sign_assertion", "idp") or False,
+                **resp_args)
+        except Exception as excp:
+            return HttpResponseServerError(excp)
+
+        # Return as html with self-submitting form.
+        http_args = self.IDP.apply_binding(
+            binding=binding_out,
+            msg_str="%s" % authn_resp,
+            destination=destination,
+            relay_state=request.session['RelayState'],
+            response=True)
+
+        logger.debug('Response args are: {}'.format(http_args))
+        self.try_multifactor(request, processor, http_args)
+        logger.debug("Performing SAML redirect to: {}".format(http_args['url']))
+        return HttpResponse(http_args['data'])
 
 
 def metadata(request):
     """ Returns an XML with the SAML 2.0 metadata for this Idp.
         The metadata is constructed on-the-fly based on the config dict in the django settings.
     """
-    conf = IdPConfig()
-    conf.load(copy.deepcopy(settings.SAML_IDP_CONFIG))
-    metadata = entity_descriptor(conf)
+    metadata = entity_descriptor(IdPConfig().load(copy.deepcopy(settings.SAML_IDP_CONFIG)))
     return HttpResponse(content=text_type(metadata).encode('utf-8'), content_type="text/xml; charset=utf8")

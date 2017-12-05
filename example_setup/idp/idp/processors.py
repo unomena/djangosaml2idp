@@ -1,11 +1,8 @@
-from django.contrib.auth.models import Group
-
 from djangosaml2idp.processors import BaseProcessor
 
 
 class GroupProcessor(BaseProcessor):
-    """
-        Example implementation of access control for users:
+    """ Example implementation of access control for users:
         - superusers are allowed
         - staff is allowed
         - they have to belong to a certain group
