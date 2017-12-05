@@ -107,7 +107,7 @@ You also have to define a mapping with config for each SP you talk to::
 The keys of this dict are the Service Provider ID's. The IdP will only respond to SP ID's which are present in this mapping.
 For the values, see the `configuration` section in the docs.
 
-That's all for the required IdP configuration. Assuming you run the Django development server on localhost:8000, you can get its metadata by visiting <http://localhost:8000/idp/metadata/>.
+That's all for the required IdP configuration. Assuming you run the Django development server on localhost:8000, you can get its metadata by visiting http://localhost:8000/idp/metadata/.
 Use this metadata xml to configure your SP. Place the metadata xml from that SP in the location specified in the IdP config dict above (sp_metadata.xml in the example above).
 
 .. _pysaml2_configuration: https://github.com/rohe/pysaml2/blob/master/doc/howto/config.rst

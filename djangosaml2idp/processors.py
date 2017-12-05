@@ -1,7 +1,8 @@
 class BaseProcessor(object):
-    """ Processor class is used to:
-        1. determine if a user has access to a client service of this IDP
-        2. create the identity dictionary sent to the SP
+    """
+        Processor class is used to:
+            1. determine if a user has access to a client service of this IDP
+            2. create the identity dictionary sent to the SP
     """
 
     def has_access(self, user):
