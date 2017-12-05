@@ -1,17 +1,16 @@
 class BaseProcessor(object):
-    """
-        Processor class is used to:
-            1. determine if a user has access to a client service of this IDP
-            2. create the identity dictionary sent to the SP
+    """ Processor class is used to:
+        - determine if a user has access to a client service of this IDP
+        - create the identity dictionary sent to the SP
     """
 
     def has_access(self, user):
-        """ Allow the user SSO access by performing a check if necessary and returning True. """
+        """ Return True if this user can perform SSO login. """
         return True
 
     def multifactor_url(self, user):
         """ If a second level authentication system is required, return a url here to redirect
-            the user to (the behaviour can be chosen by overriden the method in the LoginView).
+            the user to (this default behaviour can be changed by overriden the method in the LoginView).
             If None is returned (or something evaluating to False), no multifactor check is
             done. Return HttpResponse(request.session['saml_data']) from that view after verification.
         """

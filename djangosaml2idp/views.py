@@ -65,7 +65,7 @@ class LoginProcessView(LoginRequiredMixin, View):
         return processor.create_identity(request.user, sp_attribute_mapping)
 
     def try_multifactor(self, request, processor, http_args):
-        """ Hook to allow multifactor authentication. Example implementation here:
+        """ Hook called just before a normal SAML response return, to allow multifactor authentication. Example implementation here:
             If required by processor, store SAML response in session and redirect to user-defined view.
             User-defined view can then do whatever validation it needs and return HttpResponse(request.session['saml_data']).
         """

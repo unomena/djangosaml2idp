@@ -18,52 +18,11 @@ to perform some checks on a user.
 Login View
 **********
 
-The main view that processes a SAML request is the LoginView. It is a class-based view allowing to override methods and hooks as necessary. The code below shows the flow of the view.
+The main view that processes a SAML request is the LoginView. It is a class-based view allowing to override methods and hooks as necessary.
 
 
-    class LoginProcessView(LoginRequiredMixin, View):
-        IDP = Server(config=IdPConfig().load(copy.deepcopy(settings.SAML_IDP_CONFIG)))
-
-        def construct_server(self, request, *args, **kwargs):
-            """ If necessary, construct / edit / update self.IDP here. """
-            pass
-
-        def construct_identity(self, request, processor, sp_config):
-            """ Create user identity dict (SP-specific). """
-            sp_attribute_mapping = sp_config.get('attribute_mapping', {'username': 'username'})
-            return processor.create_identity(request.user, sp_attribute_mapping)
-
-        def try_multifactor(self, request, processor, http_args):
-            """ Hook to allow multifactor authentication. Example implementation here:
-                If required by processor, store SAML response in session and redirect to user-defined view.
-                User-defined view can then do whatever validation it needs and return HttpResponse(request.session['saml_data']).
-            """
-            multifactor_url = processor.multifactor_url(request.user)
-            if multifactor_url:
-                request.session['saml_data'] = http_args['data']
-                logger.debug("Redirecting to process_multi_factor")
-                return HttpResponseRedirect(multifactor_url)
-
-        def get(self, request, *args, **kwargs):
-            self.construct_server(request, *args, **kwargs)
-
-            # SAML code
-
-            # Create user-specified processor or fallback to all-access base processor
-            processor_as_string = sp_config.get('processor', None)
-            processor = import_string(processor_as_string)() if processor_as_string else BaseProcessor()
-
-            if not processor.has_access(request.user):  # Check if user has access to this SP
-                raise PermissionDenied("User {} does not have access to this resource".format(request.user))
-
-            user_identity_dict = self.construct_identity(request, processor, sp_config)
-
-            # SAML code
-
-            self.try_multifactor(request, processor, http_args)
-
-            return HttpResponse(http_args['data'])
-
+.. autoclass:: djangosaml2idp.views.LoginProcessView
+    :members: construct_server, construct_identity, try_multifactor
 
 
 ***********************************
