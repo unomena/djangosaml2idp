@@ -18,7 +18,7 @@ setup(
     ]),
     install_requires=[
         'django>=1.11',
-        'pysaml2>=4.4.0'
+        'pysaml2>=4.5.0'
         ],
     license='MIT',
     packages=find_packages(exclude=["tests*", "docs"]),

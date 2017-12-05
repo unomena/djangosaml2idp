@@ -18,7 +18,7 @@ to perform some checks on a user.
 Login View
 **********
 
-The main view that processes a SAML request is the LoginView. It is a class-based view allowing to override methods and hooks as necessary.
+The main view that processes a SAML request is the LoginView. It is a class-based view allowing inheritance to override methods and hooks as necessary.
 
 
 .. autoclass:: djangosaml2idp.views.LoginProcessView

@@ -18,7 +18,10 @@ It builds on top of PySAML2_, is compatible with Python 2/3 and Django >= 1.11.
 
 Any contributions, feature requests, proposals, ideas ... are welcome!
 
-More extensive documentation to be found on https://djangosaml2idp.readthedocs.io/en/latest/?badge=latest
+[Documentation on Read The Docs](https://djangosaml2idp.readthedocs.io/en/latest/?badge=latest)
+
+[Changelog](docs/CHANGELOG.rst)
+
 
 Installation
 ------------
