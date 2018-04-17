@@ -121,8 +121,8 @@ def login_process(request):
     # Construct SamlResponse message
     try:
         authn_resp = IDP.create_authn_response(
-            identity=identity, userid=request.user.email,
-            name_id=NameID(format=resp_args['name_id_policy'].format, sp_name_qualifier=destination, text=request.user.email),
+            identity=identity, userid=request.user.username,
+            name_id=NameID(format=resp_args['name_id_policy'].format, sp_name_qualifier=destination, text=request.user.username),
             authn=AUTHN_BROKER.get_authn_by_accr(req_authn_context),
             sign_response=IDP.config.getattr("sign_response", "idp") or False,
             sign_assertion=IDP.config.getattr("sign_assertion", "idp") or False,
@@ -141,36 +141,36 @@ def login_process(request):
     logger.debug('http args are: %s' % http_args)
 
     if processor.enable_multifactor(request.user):
-      # Store http_args in session for after multi factor is complete
-      request.session['saml_data'] = http_args['data']
-      logger.debug("Redirecting to process_multi_factor")
-      return HttpResponseRedirect(reverse('saml_multi_factor'))
+        # Store http_args in session for after multi factor is complete
+        request.session['saml_data'] = http_args['data']
+        logger.debug("Redirecting to process_multi_factor")
+        return HttpResponseRedirect(reverse('saml_multi_factor'))
     else:
-      logger.debug("Performing SAML redirect")
-      return HttpResponse(http_args['data'])
+        logger.debug("Performing SAML redirect")
+        return HttpResponse(http_args['data'])
 
 
 @login_required
 def process_multi_factor(request, *args, **kwargs):
-  """This function is to perform 'other' user validation, for example 2nd factor
-  checks. Override this view per the documentation if using this functionality.
-  """
-  logger.debug('In process_multi_factor view')
+    """This function is to perform 'other' user validation, for example 2nd factor
+    checks. Override this view per the documentation if using this functionality.
+    """
+    logger.debug('In process_multi_factor view')
 
-  def check_other_factor(request.user):
-    """The code here can do whatever it needs to validate your user but must
-    return True for authentication to be considered a success"""
-    return True
+    def check_other_factor(request):
+        """The code here can do whatever it needs to validate your user but must
+        return True for authentication to be considered a success"""
+        return True
 
-  if check_other_factor(request.user):
-    logger.debug('Second factor succeeded for %s' % request.user)
-    # If authentication succeeded, log in is ok
-    return HttpResponse(request.session['saml_data'])
-  else:
-    logger.debug("Second factor failed; %s will not be able to log in" % request.user)
-    # Otherwise they should not be logging in.
-    logout(request)
-    raise PermissionDenied("Second authentication factor failed")
+    if check_other_factor(request.user):
+        logger.debug('Second factor succeeded for %s' % request.user)
+        # If authentication succeeded, log in is ok
+        return HttpResponse(request.session['saml_data'])
+    else:
+        logger.debug("Second factor failed; %s will not be able to log in" % request.user)
+        # Otherwise they should not be logging in.
+        logout(request)
+        raise PermissionDenied("Second authentication factor failed")
 
 
 def metadata(request):
