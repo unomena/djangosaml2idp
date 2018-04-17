@@ -121,8 +121,8 @@ def login_process(request):
     # Construct SamlResponse message
     try:
         authn_resp = IDP.create_authn_response(
-            identity=identity, userid=request.user.username,
-            name_id=NameID(format=resp_args['name_id_policy'].format, sp_name_qualifier=destination, text=request.user.username),
+            identity=identity, userid=request.user.email,
+            name_id=NameID(format=resp_args['name_id_policy'].format, sp_name_qualifier=destination, text=request.user.email),
             authn=AUTHN_BROKER.get_authn_by_accr(req_authn_context),
             sign_response=IDP.config.getattr("sign_response", "idp") or False,
             sign_assertion=IDP.config.getattr("sign_assertion", "idp") or False,
