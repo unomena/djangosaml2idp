@@ -25,7 +25,7 @@ SECRET_KEY = 'ar249h_c(@5#x)ha_vou=4%plz*#!*l=+4c^jbo6wi%8z222hg'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'djangosaml2',
+    'sp',
 ]
 
 MIDDLEWARE = [
@@ -51,6 +52,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'sp.urls'
+
 
 TEMPLATES = [
     {
@@ -67,6 +69,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'sp.wsgi.application'
 
@@ -141,7 +144,7 @@ LOGOUT_REDIRECT_URL = '/'
 BASE_URL = 'http://localhost:8000/saml2'
 
 SAML_CONFIG = {
-    'debug' : DEBUG,
+    'debug': DEBUG,
     'xmlsec_binary': get_xmlsec_binary(['/opt/local/bin', '/usr/bin/xmlsec1']),
     'entityid': '%s/metadata/' % BASE_URL,
 
@@ -169,14 +172,14 @@ SAML_CONFIG = {
         'local': [os.path.join(os.path.join(os.path.join(BASE_DIR, 'sp'), 'saml2_config'), 'idp_metadata.xml')],
     },
     # Signing
-    'key_file': BASE_DIR + '/certificates/private_key.pem',
-    'cert_file': BASE_DIR + '/certificates/public_key.pem',
+    'key_file': BASE_DIR + '/certificates/private.key',
+    'cert_file': BASE_DIR + '/certificates/public.cert',
     # Encryption
     'encryption_keypairs': [{
-        'key_file': BASE_DIR + '/certificates/private_key.pem',
-        'cert_file': BASE_DIR + '/certificates/public_key.pem',
+        'key_file': BASE_DIR + '/certificates/private.key',
+        'cert_file': BASE_DIR + '/certificates/public.cert',
     }],
-    'valid_for': 365 * 24, 
+    'valid_for': 365 * 24,
 }
 
 SAML_USE_NAME_ID_AS_USERNAME = True
